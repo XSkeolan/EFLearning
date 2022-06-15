@@ -1,0 +1,6 @@
+{
+  "ConnectionStrings": {
+    "EFtestdb": "User ID=postgres;Password=hksk2q;Host=localhost;Port=5432;Database=EFtestdb;Pooling=true;Connection Lifetime=0;",
+    "MessengerDb": "User ID=postgres;Password=hksk2q;Host=localhost;Port=5432;Database=messengerEFdb;Pooling=true;Connection Lifetime=0;"
+  }
+}
