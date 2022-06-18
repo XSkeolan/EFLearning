@@ -19,7 +19,7 @@ namespace MessengerDAL
             // установка пути к текущему каталогу
             builder.SetBasePath(Directory.GetCurrentDirectory());
             // получаем конфигурацию из файла
-            builder.AddJsonFile("appconfig.json");
+            builder.AddJsonFile("appsettings.json");
             // создаем конфигурацию
             var config = builder.Build();
             // получаем строку подключения

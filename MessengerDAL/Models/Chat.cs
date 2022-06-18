@@ -17,7 +17,7 @@ namespace MessengerDAL.Models
         public Guid CreatorId { get; set; }
         public User? Creator { get; set; }
 
-        public Guid PhotoId { get; set; }
+        public Guid? PhotoId { get; set; }
         public File? Photo { get; set; }
 
         public Guid DefaultUserTypeId { get; set; }

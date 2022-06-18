@@ -17,6 +17,7 @@ namespace MessengerDAL
         public virtual DbSet<Models.File> Files { get; set; } = null!;
         public virtual DbSet<ChatLink> ChatLinks { get; set; } = null!;
         public virtual DbSet<ConfirmationCode> ConfirmationCodes { get; set; } = null!;
+        public virtual DbSet<UserChat> UserChats { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

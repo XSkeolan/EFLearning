@@ -15,7 +15,7 @@ namespace MessengerDAL.Models
 
         [EmailAddress]
         [StringLength(100)]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [StringLength(20)]
         public string Nickname { get; set; }
