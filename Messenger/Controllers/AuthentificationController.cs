@@ -122,8 +122,8 @@ namespace Messenger.Controllers
                     Name = user.Name,
                     Surname = user.Surname,
                     Nickname = user.Nickname,
-                    Status = user.Status,
-                    Email = user.Email,
+                    Status = user.Status ?? "",
+                    Email = user.Email ?? "",
                     IsConfirmed = user.IsConfirmed,
                     Phonenumber = user.Phone
                 });

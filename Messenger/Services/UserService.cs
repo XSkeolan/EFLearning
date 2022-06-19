@@ -8,6 +8,7 @@ using Messenger.Options;
 using System.Net.Mail;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using MessengerLibrary;
 
 namespace Messenger.Services
 {
@@ -161,8 +162,8 @@ namespace Messenger.Services
                 throw new InvalidOperationException(ResponseErrors.INVALID_TOKEN);
             }
 
-            var userIdTokenClaim = token.Claims.FirstOrDefault(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.ValueType == "Guid");
-            var emailTokenClaim = token.Claims.First(claim => claim.Type == "Email");
+            Claim? userIdTokenClaim = token.Claims.FirstOrDefault(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.ValueType == "Guid");
+            Claim? emailTokenClaim = token.Claims.FirstOrDefault(claim => claim.Type == "Email");
 
             if (userIdTokenClaim == null || emailTokenClaim == null || !Guid.TryParse(userIdTokenClaim.Value, out Guid userId))
             {
@@ -281,71 +282,17 @@ namespace Messenger.Services
 
         public async Task SendCodeAsync(string email)
         {
-            User user = await _messengerContext.Users.Where(u => u.IsConfirmed && u.Email == email && u.Email != null && !u.IsDeleted).FirstOrDefaultAsync() 
+            User user = await _messengerContext.Users.Where(u => u.IsConfirmed && u.Email == email && !u.IsDeleted).FirstOrDefaultAsync() 
                 ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
 
-            if (_messengerContext.ConfirmationCodes.Where(code => code.UserId == user.Id && !code.IsDeleted).Any())
-            {
-                throw new InvalidOperationException(ResponseErrors.USER_ALREADY_HAS_CODE);
-            }
-
-            (string newHashedCode, string generatedCode) = GenerateCodes();
-            
-            ConfirmationCode code = new ConfirmationCode
-            {
-                Code = newHashedCode,
-                UserId = user.Id,
-                DateStart = DateTime.UtcNow
-            };
-
-            await _messengerContext.ConfirmationCodes.AddAsync(code);
-            await _messengerContext.SaveChangesAsync();
-            await SendToEmailAsync(user.Email!, "Код восстановления", generatedCode);
-        }
-
-        public async Task ResendCodeAsync(string email, string phone)
-        {
-            User user = await _messengerContext.Users.FirstOrDefaultAsync(u => u.IsConfirmed && (u.Email == email || u.Phone == phone) && !u.IsDeleted)
-                ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_FOUND);
-
-            string generatedCode = await GetCode(user);
+            CodeGenerator codeGenerator = new CodeGenerator(_messengerContext);
+            codeGenerator.SetPreviousCodeAsInvalid(user.Id);
+            ConfirmationCode code = await codeGenerator.GenerateForUser(user.Id);
 
             if (!string.IsNullOrEmpty(user.Email))
             {
                 await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
             }
-        }
-
-        private async Task<string> GetCode(User user)
-        {
-            ConfirmationCode? code = await _messengerContext.ConfirmationCodes.FirstOrDefaultAsync(code => code.UserId == user.Id && !code.IsDeleted)
-                            ?? throw new InvalidOperationException(ResponseErrors.USER_HAS_NOT_CODE);
-
-            var codes = GenerateCodes();
-            code.Code = codes.newHashedCode;
-            _messengerContext.ConfirmationCodes.Update(code);
-            await _messengerContext.SaveChangesAsync();
-            return codes.generatedCode;
-        }
-
-        private (string newHashedCode, string generatedCode) GenerateCodes()
-        {
-            string newHashedCode;
-            string generatedCode;
-            Random rnd = new Random();
-
-            do
-            {
-                generatedCode = string.Empty;
-                for (int i = 0; i < 6; i++)
-                {
-                    generatedCode += rnd.Next(0, 10).ToString();
-                }
-                newHashedCode = Password.GetHashedPassword(generatedCode);
-            }
-            while (_messengerContext.ConfirmationCodes.Any(code => code.Code == newHashedCode && !code.IsUsed && !code.IsDeleted));
-
-            return (newHashedCode, generatedCode);
         }
     }
 }
