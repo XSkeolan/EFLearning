@@ -54,7 +54,7 @@ namespace Messenger.Services
             if (_messengerContext.Users.Any(u => u.Phone == user.Phone || u.Nickname == user.Nickname || (u.Email == user.Email && u.IsConfirmed) && !u.IsDeleted))
                 throw new ArgumentException(ResponseErrors.USER_ALREADY_EXIST);
 
-            if (!string.IsNullOrWhiteSpace(user.Email) && _messengerContext.Users.Where(u => u.Email == user.Email) != null)
+            if (!string.IsNullOrWhiteSpace(user.Email) && await _messengerContext.Users.AnyAsync(u => u.Email == user.Email))
             {
                 throw new ArgumentException(ResponseErrors.EMAIL_ALREADY_EXIST);
             }
@@ -126,14 +126,13 @@ namespace Messenger.Services
             User? user = await _messengerContext.Users.FindAsync(id);
             if (id != _serviceContext.UserId && user != null)
             {
-                IEnumerable<Guid> firstUserChats = user.Chats.Select(chat => chat.Id);
-
                 User? currentUser = await _messengerContext.Users.FindAsync(_serviceContext.UserId);
-                if(currentUser == null)
+                if (currentUser == null)
                 {
                     throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
                 }
 
+                IEnumerable<Guid> firstUserChats = user.Chats.Select(chat => chat.Id);
                 IEnumerable<Guid> secondUserChats = currentUser.Chats.Select(chat => chat.Id);
 
                 if (!firstUserChats.Intersect(secondUserChats).Any())
@@ -145,6 +144,7 @@ namespace Messenger.Services
             return user ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
         }
 
+        ///Можно переделать
         public async Task<bool> ConfirmEmailAsync(string emailToken)
         {
             if (string.IsNullOrWhiteSpace(emailToken))

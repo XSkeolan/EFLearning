@@ -257,7 +257,7 @@ namespace Messenger.Controllers
 
                 return Ok();
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
