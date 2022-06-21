@@ -1,8 +1,6 @@
 ﻿using MessengerDAL.Models;
 using MessengerDAL;
 using Messenger.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Messenger.Options;
 using System.Net.Mail;
@@ -144,7 +142,6 @@ namespace Messenger.Services
             return user ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
         }
 
-        ///Можно переделать
         public async Task<bool> ConfirmEmailAsync(string emailToken)
         {
             if (string.IsNullOrWhiteSpace(emailToken))
@@ -152,26 +149,24 @@ namespace Messenger.Services
                 throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
             }
 
-            JwtSecurityToken token;
+            EmailJwtToken emailJwt = new EmailJwtToken();
+            ClaimParser claimParser;
             try
             {
-                token = new JwtSecurityTokenHandler().ReadJwtToken(emailToken);
+                emailJwt.ValidateToken(emailToken);
+
+                claimParser = new ClaimParser(emailJwt.GetAllClaims(), new List<TokenClaimPart> { new GuidTokenClaimPart(), new EmailTokenClaimPart() });
+                claimParser.ParseTokenClaims();
             }
-            catch (ArgumentException)
+            catch(Exception ex)
             {
-                throw new InvalidOperationException(ResponseErrors.INVALID_TOKEN);
+                throw new InvalidOperationException(ex.Message);
             }
 
-            Claim? userIdTokenClaim = token.Claims.FirstOrDefault(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.ValueType == "Guid");
-            Claim? emailTokenClaim = token.Claims.FirstOrDefault(claim => claim.Type == "Email");
+            
 
-            if (userIdTokenClaim == null || emailTokenClaim == null || !Guid.TryParse(userIdTokenClaim.Value, out Guid userId))
-            {
-                throw new InvalidOperationException(ResponseErrors.INVALID_TOKEN);
-            }
-
-            User? user = await _messengerContext.Users.FindAsync(userId);
-            if (user == null || user.Email != emailTokenClaim.Value)
+            User? user = await _messengerContext.Users.FindAsync(claimParser.TokenParts[0].Value);
+            if (user == null || user.Email != claimParser.TokenParts[1].Value)
             {
                 return false;
             }
@@ -284,7 +279,15 @@ namespace Messenger.Services
         {
             User user = await _messengerContext.Users.Where(u => u.IsConfirmed && u.Email == email && !u.IsDeleted).FirstOrDefaultAsync() 
                 ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            string hashedCode;
+            string generatedCode;
 
+            do
+            {
+                generatedCode = CodeGenerator.Generate();
+                hashedCode = Password.GetHashedPassword(generatedCode);
+            }
+            while (_messengerContext.ConfirmationCodes.Any(code => code.Code == hashedCode && !code.IsUsed && !code.IsDeleted));
             CodeGenerator codeGenerator = new CodeGenerator(_messengerContext);
             codeGenerator.SetPreviousCodeAsInvalid(user.Id);
             ConfirmationCode code = await codeGenerator.GenerateForUser(user.Id);

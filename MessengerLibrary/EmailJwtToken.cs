@@ -1,35 +1,42 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MessengerLibrary
 {
-    public class EmailJwtToken
+    public class EmailJwtToken : TokenClaimPart
     {
         JwtSecurityTokenHandler _jwtHandler;
-        Claim[] _claims;
+        List<Claim> _claims;
 
         public EmailJwtToken()
         {
             _jwtHandler = new JwtSecurityTokenHandler();
-            _claims = new Claim[2];
+            _claims = new List<Claim>();
         }
 
         public void ValidateToken(string token)
         {
             JwtSecurityToken parseToken = _jwtHandler.ReadJwtToken(token);
 
-            _claims[0] = parseToken.Claims.FirstOrDefault(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType && claim.ValueType == "Guid") 
-                ?? throw new ArgumentException("Invalid claim");
-            _claims[1] = parseToken.Claims.FirstOrDefault(claim => claim.Type == "Email") 
-                ?? throw new ArgumentException("Invalid claim");
+            foreach(Claim claim in parseToken.Claims)
+            {
+                if(string.IsNullOrWhiteSpace(claim.Value))
+                {
+                    throw new ArgumentException("Token is invalid");
+                }
+                if(_claims.Select(c => c.Type).Contains(claim.Type))
+                {
+                    throw new InvalidOperationException("Claim type already exist");
+                }
+                _claims.Add(claim);
+            }
         }
 
-        public Claim[] Claims => _claims;
+        public Claim GetClaim(string type)
+        {
+            return _claims.FirstOrDefault(claim => claim.Type == type) ?? throw new ArgumentException("Claim value with this type not found");
+        }
+
+        public List<Claim> GetAllClaims() => _claims;
     }
 }

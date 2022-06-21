@@ -19,6 +19,5 @@ namespace Messenger.Interfaces
         Task<bool> ConfirmEmailAsync(string emailToken);
         Task<ConfirmationCode> TryGetCodeInfoAsync(string code);
         Task SendCodeAsync(string email);
-        Task ResendCodeAsync(string email);
     }
 }

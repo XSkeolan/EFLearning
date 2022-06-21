@@ -6,14 +6,12 @@ namespace MessengerLibrary
 {
     public class CodeGenerator
     {
-        private readonly MessengerContext _messengerContext;
-
-        public CodeGenerator(MessengerContext messengerContext)
+        public CodeGenerator()
         {
-            _messengerContext = messengerContext;
+
         }
 
-        private string Generate()
+        public string Generate()
         {
             Random rnd = new Random();
             string generatedCode = string.Empty;
@@ -24,32 +22,6 @@ namespace MessengerLibrary
             }
 
             return generatedCode;
-        }
-
-        public async Task<ConfirmationCode> GenerateForUser(Guid userId)
-        {
-            string hashedCode;
-            string generatedCode;
-
-            do
-            {
-                generatedCode = Generate();
-                hashedCode = Password.GetHashedPassword(generatedCode);
-            }
-            while (_messengerContext.ConfirmationCodes.Any(code => code.Code == hashedCode && !code.IsUsed && !code.IsDeleted));
-
-            ConfirmationCode code = new ConfirmationCode
-            {
-                Code = hashedCode,
-                DateStart = DateTime.UtcNow,
-                IsUsed = false,
-                UserId = userId
-            };
-
-            await _messengerContext.ConfirmationCodes.AddAsync(code);
-            await _messengerContext.SaveChangesAsync();
-
-            return code;
         }
 
         public async void SetPreviousCodeAsInvalid(Guid userId)

@@ -14,6 +14,7 @@ namespace Messenger
         public const string USER_ALREADY_HAS_CODE = "You already have a code that is not used. if you want to poison the code again, use the method resendCode";
         public const string USER_HAS_NOT_CODE = "You have not confirmation code";
         public const string USER_NOT_PARTICIPANT = "This user is not a member";
+        public const string USER_TYPE_NOT_FOUND = "This user type does not exist";
 
         #region Chats
         public const string CHAT_NOT_FOUND = "Chat not found";

@@ -253,7 +253,16 @@ namespace Messenger.Controllers
             {
                 string emailToken = await _tokenService.CreateEmailToken();
                 link = await _linkService.GetEmailLink(emailToken);
-                await _userService.SendToEmailAsync((await _userService.GetCurrentUserAsync()).Email, "Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
+                User? user = await _userService.GetCurrentUserAsync();
+                if(user == null)
+                {
+                    return BadRequest(ResponseErrors.USER_NOT_AUTHENTIFICATION);
+                }
+                if(string.IsNullOrWhiteSpace(user.Email))
+                {
+                    return BadRequest(ResponseErrors.USER_EMAIL_NOT_SET);
+                }
+                await _userService.SendToEmailAsync(user.Email, "Подтверждение почты", "Мы рады, что вы используете наш сервис. Чтобы подтвердить ваш аккаунт, перейдите по ссылке\n" + link);
 
                 return Ok();
             }
@@ -309,26 +318,6 @@ namespace Messenger.Controllers
             {
                 MailAddress m = new MailAddress(email);
                 await _userService.SendCodeAsync(email);
-                return Ok();
-            }
-            catch (FormatException)
-            {
-                return BadRequest(ResponseErrors.INVALID_FIELDS);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost("/api/public/auth/resendCode")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ResendCode([FromBody] string email)
-        {
-            try
-            {
-                MailAddress m = new MailAddress(email);
-                await _userService.ResendCodeAsync(email);
                 return Ok();
             }
             catch (FormatException)

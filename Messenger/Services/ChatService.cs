@@ -60,6 +60,11 @@ namespace Messenger.Services
             }
 
             UserType? userType = await _messengerContext.UserTypes.FindAsync(chat.DefaultUserTypeId);
+            if(userType == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_TYPE_NOT_FOUND);
+            }
+
             UserChat userGroup = new UserChat
             {
                 ChatId = chatId,
@@ -73,11 +78,50 @@ namespace Messenger.Services
             return userGroup;
         }
 
+        public async Task KickUserAsync(Guid chatId, Guid userId)
+        {
+            await GetChatAsync(chatId);
+
+            if (!await CurrentUserHaveRights(chatId, Permissions.KICK_USER))
+            {
+                throw new InvalidOperationException(ResponseErrors.PERMISSION_DENIED);
+            }
+
+            UserChat? kickUserGroup = await _userChatRepository.GetByChatAndUserAsync(chatId, userId);
+            if (kickUserGroup == null)
+            {
+                throw new ArgumentException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
+
+            UserType? kickUserType = await _messengerContext.UserTypes.FindAsync(kickUserGroup.UserTypeId);
+            UserChat? currentUserGroup = await _userChatRepository.GetByChatAndUserAsync(chatId, _serviceContext.UserId);
+            if(currentUserGroup == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
+            }
+            UserType? currentUserType = await _messengerContext.UserTypes.FindAsync(currentUserGroup.UserTypeId);
+            if (currentUserType == null || kickUserType == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_TYPE_NOT_FOUND);
+            }
+            if (currentUserType.PriorityLevel <= kickUserType.PriorityLevel)
+            {
+                throw new InvalidOperationException(ResponseErrors.INVALID_ROLE_FOR_OPENATION);
+            }
+
+            if (kickUserType?.Id == currentUserType?.Id)
+            {
+                throw new InvalidOperationException(ResponseErrors.CHAT_MODER_NOT_DELETED);
+            }
+
+            _messengerContext.UserChats.Remove(kickUserGroup);
+        }
+
         public async Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId)
         {
             await GetChatAsync(chatId);
 
-            User? user = await _messengerContext.Users.FindAsync(userId);
+            User? user = await _messengerContext.Users.Where(user => user.Id == userId).Include(u => u.Chats).FirstOrDefaultAsync();
             if (user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
@@ -96,8 +140,12 @@ namespace Messenger.Services
                 throw new InvalidOperationException(ResponseErrors.USER_NOT_PARTICIPANT);
             }
             UserType? currnetUserType = await _messengerContext.UserTypes.FindAsync(currentUser.UserTypeId);
+            if (currnetUserType == null || userType == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_TYPE_NOT_FOUND);
+            }
 
-            if (currnetUserType.PriorityLevel <= userType.PriorityLevel && (await _userChatRepository.GetUserChatsAsync(chatId)).Any())
+            if (currnetUserType.PriorityLevel <= userType.PriorityLevel &&  user.Chats.Any(chat => chat.Id==chatId))
             {
                 throw new InvalidOperationException(ResponseErrors.INVALID_ROLE_FOR_OPENATION);
             }
@@ -117,10 +165,12 @@ namespace Messenger.Services
             await _messengerContext.SaveChangesAsync();
         }
 
-        public Task<UserType> GetAdminRoleAsync()
+        public async Task<UserType?> GetAdminRoleAsync()
         {
-            throw new NotImplementedException();
+            return await _messengerContext.UserTypes.OrderBy(type => type.PriorityLevel).FirstOrDefaultAsync();
         }
+
+
 
         private async Task<bool> CurrentUserHaveRights(Guid chatId, string right, Guid? userId = null)
         {
@@ -131,6 +181,10 @@ namespace Messenger.Services
             }
 
             UserType? currentUserRole = await _messengerContext.UserTypes.FindAsync(currentUserChat.UserTypeId);
+            if(currentUserRole == null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_TYPE_NOT_FOUND);
+            }
             if (currentUserRole.Permissions == null && (await _userChatRepository.GetChatUsersAsync(chatId)).Count() > 1)
             {
                 return false;
@@ -145,6 +199,10 @@ namespace Messenger.Services
                 }
 
                 UserType? userType = await _messengerContext.UserTypes.FindAsync(userGroup.UserTypeId);
+                if (userType == null)
+                {
+                    throw new InvalidOperationException(ResponseErrors.USER_TYPE_NOT_FOUND);
+                }
                 return currentUserRole.Permissions.Contains(right) && currentUserRole.PriorityLevel <= userType.PriorityLevel;
             }
             else

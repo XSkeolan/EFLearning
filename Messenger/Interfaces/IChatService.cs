@@ -7,7 +7,7 @@ namespace Messenger.Interfaces
         Task CreateChatAsync(Chat chat);
         Task<UserChat> InviteUserAsync(Guid chatId, Guid userId);
         Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId);
-        Task<UserType> GetAdminRoleAsync();
+        Task<UserType?> GetAdminRoleAsync();
         Task<Chat> GetChatAsync(Guid chatId);
     }
 }
