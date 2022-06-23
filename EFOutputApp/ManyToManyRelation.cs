@@ -79,15 +79,15 @@ namespace EFOutputApp
             }
         }
 
-        public void DeleteData()
-        {
-            using (EFtestdbContext db = new EFtestdbContext(_options))
-            {
-                // все строки в промежуточной таблице тоже будут удалены
-                Student? student = db.Students.FirstOrDefault();
-                db.Students.Remove(student);
-                db.SaveChanges();
-            }
-        }
+        //public void DeleteData()
+        //{
+        //    using (EFtestdbContext db = new EFtestdbContext(_options))
+        //    {
+        //        // все строки в промежуточной таблице тоже будут удалены
+        //        Student? student = db.Students.FirstOrDefault();
+        //        db.Students.Remove(student);
+        //        db.SaveChanges();
+        //    }
+        //}
     }
 }

@@ -12,13 +12,13 @@ namespace Messenger.Controllers
     {
         private readonly IChatService _chatService;
         private readonly ITokenService _tokenService;
-        private readonly IFileService _fileService;
+        //private readonly IFileService _fileService;
 
-        public ChatController(IChatService chatService, ITokenService tokenService, IFileService fileService)
+        public ChatController(IChatService chatService, ITokenService tokenService)
         {
             _chatService = chatService;
             _tokenService = tokenService;
-            _fileService = fileService;
+            //_fileService = fileService;
         }
 
         [HttpPost]
@@ -40,8 +40,16 @@ namespace Messenger.Controllers
 
             await _chatService.CreateChatAsync(chat);
 
-            await _chatService.InviteUserAsync(chat.Id, chat.CreatorId);
-            await _chatService.SetRoleAsync(chat.Id, chat.CreatorId, (await _chatService.GetAdminRoleAsync()).Id);
+            try
+            {
+                await _chatService.InviteUserAsync(chat.Id, chat.CreatorId);
+                UserType adminType = await _chatService.GetAdminRoleAsync();
+                await _chatService.SetRoleAsync(chat.Id, chat.CreatorId, adminType.Id);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             ChatResponse response = new ChatResponse
             {
@@ -53,5 +61,47 @@ namespace Messenger.Controllers
 
             return Created($"api/private/chat?id={response.Id}", response);
         }
+
+        [HttpGet("getChat")]
+        [Authorize]
+        public async Task<IActionResult> GetChat(Guid id)
+        {
+            try
+            {
+                Chat chat = await _chatService.GetChatAsync(id);
+                
+                ChatResponse chatResponse = new ChatResponse
+                {
+                    Id = chat.Id,
+                    Name = chat.Name,
+                    Photo = chat.PhotoId,
+                    CreatorId = chat.CreatorId,
+                    //CountUsers = await _chatService.GetCountUserInChat(id)
+                };
+
+                return Ok(chatResponse);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("deleteChat")]
+        [Authorize]
+        public async Task<IActionResult> DeleteChat(Guid chatId)
+        {
+            try
+            {
+                await _chatService.DeleteChatAsync(chatId);
+                return Ok();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
     }
 }

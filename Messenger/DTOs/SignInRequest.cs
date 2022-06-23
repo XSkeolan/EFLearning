@@ -5,10 +5,10 @@
         /// <summary>
         /// Номер телефона для входа
         /// </summary>
-        public string Phonenumber { get; set; }
+        public string Phonenumber { get; set; } = null!;
         /// <summary>
         /// Пароль указанный при регистрации
         /// </summary>
-        public string Password { get; set; }
+        public string Password { get; set; } = null!;
     }
 }

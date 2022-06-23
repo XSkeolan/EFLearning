@@ -26,12 +26,12 @@ namespace MessengerLibrary
 
         public async void SetPreviousCodeAsInvalid(Guid userId)
         {
-            ConfirmationCode? code = await _messengerContext.ConfirmationCodes.OrderBy(c => c.DateStart).FirstOrDefaultAsync(c => c.UserId == userId);
-            if(code != null)
-            {
-                code.IsUsed = true;
-                _messengerContext.SaveChanges();
-            }
+            //ConfirmationCode? code = await _messengerContext.ConfirmationCodes.OrderBy(c => c.DateStart).FirstOrDefaultAsync(c => c.UserId == userId);
+            //if(code != null)
+            //{
+            //    code.IsUsed = true;
+            //    _messengerContext.SaveChanges();
+            //}
         }
     }
 }

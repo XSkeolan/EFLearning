@@ -19,7 +19,7 @@ namespace Messenger.Middleware
         public async Task InvokeAsync(HttpContext context, IServiceContext serviceContext, MessengerContext messengerContext)
         {
             Console.WriteLine(context.Request.Path.Value);
-            if (context.Request.Path.Value.StartsWith("/api/private"))
+            if (context.Request.Path.Value != null && context.Request.Path.Value.StartsWith("/api/private"))
             {
                 string jwtToken = context.Request.Headers.Authorization;
                 if (string.IsNullOrEmpty(jwtToken))
@@ -29,13 +29,25 @@ namespace Messenger.Middleware
                     return;
                 }
 
-                string token = jwtToken.Split(' ')[1];
+                JwtSecurityToken jwtSecureToken;
+                try
+                {
+                    string token = jwtToken.Split(' ')[1];
+                    jwtSecureToken = new JwtSecurityTokenHandler().ReadJwtToken(token);
+                }
+                catch(Exception ex)
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    await context.Response.WriteAsync(ResponseErrors.UNAUTHORIZE + " " + ex.Message);
+                    return;
+                }
 
-                var handler = new JwtSecurityTokenHandler();
-                var jsonToken = handler.ReadToken(token);
-                var tokenS = jsonToken as JwtSecurityToken;
-
-                Guid sessionId = Guid.Parse(tokenS.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType).Value);
+                if(!Guid.TryParse(jwtSecureToken.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType).Value, out Guid sessionId))
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    await context.Response.WriteAsync(ResponseErrors.UNAUTHORIZE);
+                    return;
+                }
 
                 Session? session = await messengerContext.Sessions.FindAsync(sessionId);
 

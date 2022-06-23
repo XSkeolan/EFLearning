@@ -46,45 +46,45 @@ namespace EFOutputApp
             }
         }
 
-        public void EditData()
-        {
-            using (EFtestdbContext db = new EFtestdbContext(_options))
-            {
-                User? user = db.Users.FirstOrDefault();
-                if(user != null)
-                {
-                    user.Password = "newpassword2022";
-                    db.SaveChanges();
-                }
+        //public void EditData()
+        //{
+        //    using (EFtestdbContext db = new EFtestdbContext(_options))
+        //    {
+        //        User? user = db.Users.FirstOrDefault();
+        //        if(user != null)
+        //        {
+        //            user.Password = "newpassword2022";
+        //            db.SaveChanges();
+        //        }
 
-                UserProfile? userProfile = db.UserProfiles.FirstOrDefault(p => p.User.Nickname == "test one-to-one");
-                if(userProfile != null)
-                {
-                    userProfile.Name = "Danill";
-                    db.SaveChanges();
-                }
-            }
-        }
+        //        UserProfile? userProfile = db.UserProfiles.FirstOrDefault(p => p.User.Nickname == "test one-to-one");
+        //        if(userProfile != null)
+        //        {
+        //            userProfile.Name = "Danill";
+        //            db.SaveChanges();
+        //        }
+        //    }
+        //}
 
-        public void DeleteData()
-        {
-            using (EFtestdbContext db = new EFtestdbContext(_options))
-            {
-                User? user = db.Users.FirstOrDefault();
-                if(user != null)
-                {
-                    // в данном случае, т.к. UserProfile требует наличия User, то при удалении User, объект UserProfile тоже будет удален
-                    db.Users.Remove(user);
-                    db.SaveChanges();
-                }
+        //public void DeleteData()
+        //{
+        //    using (EFtestdbContext db = new EFtestdbContext(_options))
+        //    {
+        //        User? user = db.Users.FirstOrDefault();
+        //        if(user != null)
+        //        {
+        //            // в данном случае, т.к. UserProfile требует наличия User, то при удалении User, объект UserProfile тоже будет удален
+        //            db.Users.Remove(user);
+        //            db.SaveChanges();
+        //        }
 
-                UserProfile? profile = db.UserProfiles.FirstOrDefault(p => p.User.Nickname == "test one-to-one2");
-                if(profile != null)
-                {
-                    db.UserProfiles.Remove(profile);
-                    db.SaveChanges();
-                }
-            }
-        }
+        //        UserProfile? profile = db.UserProfiles.FirstOrDefault(p => p.User.Nickname == "test one-to-one2");
+        //        if(profile != null)
+        //        {
+        //            db.UserProfiles.Remove(profile);
+        //            db.SaveChanges();
+        //        }
+        //    }
+        //}
     }
 }

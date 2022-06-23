@@ -6,7 +6,7 @@
         /// <summary>
         /// Токен авторизации
         /// </summary>
-        public string Token { get; set; }
+        public string Token { get; set; } = null!;
         /// <summary>
         /// Время жизни токена в секундах
         /// </summary>

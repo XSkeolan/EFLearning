@@ -11,7 +11,7 @@ namespace Messenger.Interfaces
         Task<Session> SignInAsync(string phone, string password, string device);
         Task SignOutAsync();
         Task<User> GetUserAsync(Guid id);
-        Task UpdateUserInfoAsync(string name, string surname, string nickName, string email);
+        Task UpdateUserInfoAsync(string name, string surname, string nickName, string? email);
         Task UpdateStatusAsync(string newStatus);
         Task ChangePasswordAsync(Guid? userid, string newPassword);
         Task<User?> GetCurrentUserAsync();

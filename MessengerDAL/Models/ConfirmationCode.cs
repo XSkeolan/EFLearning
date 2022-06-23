@@ -10,7 +10,7 @@ namespace MessengerDAL.Models
     public class ConfirmationCode : EntityBase
     {
         [StringLength(64)]
-        public string Code { get; set; }
+        public string Code { get; set; } = null!;
         public DateTime DateStart { get; set; }
         public bool IsUsed { get; set; } = false;
 

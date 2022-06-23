@@ -12,9 +12,10 @@ namespace Messenger.Services
 {
     public class UserService : IUserService
     {
-        private readonly MessengerContext _messengerContext;
         private readonly IServiceContext _serviceContext;
-
+        private readonly IUserRepository _userRepository;
+        private readonly ISessionRepository _sessionRepository;
+        private readonly IConfirmationCodeRepository _confirmationCodeRepository;
         private readonly int _sessionExpires;
         private readonly int _emailLinkExpires;
 
@@ -26,11 +27,18 @@ namespace Messenger.Services
 
         private readonly TimeSpan _validTime;
 
-        public UserService(IOptions<EmailOptions> emailOptions, IOptions<JwtOptions> options, IOptions<CodeOptions> codeOptions, MessengerContext messengerContext, IServiceContext serviceContext)
+        public UserService(IOptions<EmailOptions> emailOptions,
+            IOptions<JwtOptions> options,
+            IOptions<CodeOptions> codeOptions,
+            IServiceContext serviceContext,
+            IUserRepository userRepository,
+            ISessionRepository sessionRepository,
+            IConfirmationCodeRepository confirmationCodeRepository)
         {
-            _messengerContext = messengerContext;
             _serviceContext = serviceContext;
-
+            _userRepository = userRepository;
+            _sessionRepository = sessionRepository;
+            _confirmationCodeRepository = confirmationCodeRepository;
             _sessionExpires = options.Value.SessionExpires;
             _emailLinkExpires = options.Value.EmailLinkExpires;
 
@@ -49,35 +57,29 @@ namespace Messenger.Services
 
         public async Task CreateUserAsync(User user)
         {
-            if (_messengerContext.Users.Any(u => u.Phone == user.Phone || u.Nickname == user.Nickname || (u.Email == user.Email && u.IsConfirmed) && !u.IsDeleted))
+            if (await _userRepository.UserIsUniqueAsync(user))
                 throw new ArgumentException(ResponseErrors.USER_ALREADY_EXIST);
-
-            if (!string.IsNullOrWhiteSpace(user.Email) && await _messengerContext.Users.AnyAsync(u => u.Email == user.Email))
-            {
-                throw new ArgumentException(ResponseErrors.EMAIL_ALREADY_EXIST);
-            }
 
             user.Password = Password.GetHashedPassword(user.Password);
 
-            await _messengerContext.AddAsync(user);
-            await _messengerContext.SaveChangesAsync();
+            await _userRepository.CreateAsync(user);
         }
 
         public async Task DeleteUserAsync(string reason)
         {
-            User? user = await _messengerContext.Users.FindAsync(_serviceContext.UserId);
+            User? user = await _userRepository.FindByIdAsync(_serviceContext.UserId);
             if(user == null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_NOT_FOUND);
             }
             user.Reason = reason;
             user.IsDeleted = true;
-            await _messengerContext.SaveChangesAsync();
+            await _userRepository.UpdateAsync(user);
         }
 
         public async Task<Session> SignInAsync(string phone, string password, string device)
         {
-            User? user = await _messengerContext.Users.FirstOrDefaultAsync(u => u.Phone == phone);
+            User? user = await _userRepository.FindByPhoneAsync(phone);
             if (user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
@@ -85,7 +87,7 @@ namespace Messenger.Services
 
             Password.VerifyHashedPassword(user.Password, password);
             
-            if (_messengerContext.Sessions.Any(s => s.DeviceName == device && s.DateEnd >= DateTime.UtcNow))
+            if (await _sessionRepository.GetUnfinishedOnDeviceAsync(device, DateTime.UtcNow) != null)
             {
                 throw new InvalidOperationException(ResponseErrors.USER_ALREADY_AUTHORIZE);
             }
@@ -98,15 +100,14 @@ namespace Messenger.Services
                 DateEnd = DateTime.UtcNow.AddSeconds(_sessionExpires)
             };
 
-            await _messengerContext.AddAsync(session);
-            await _messengerContext.SaveChangesAsync();
+            await _sessionRepository.CreateAsync(session);
 
             return session;
         }
 
         public async Task SignOutAsync()
         {
-            Session? session = await _messengerContext.Sessions.FindAsync(_serviceContext.SessionId);
+            Session? session = await _sessionRepository.FindByIdAsync(_serviceContext.SessionId);
             if(session == null)
             {
                 throw new InvalidOperationException(ResponseErrors.SESSION_NOT_FOUND);
@@ -116,15 +117,15 @@ namespace Messenger.Services
                 throw new InvalidOperationException(ResponseErrors.SESSION_ALREADY_ENDED);
             }
             session.DateEnd = DateTime.UtcNow;
-            await _messengerContext.SaveChangesAsync();
+            await _sessionRepository.UpdateAsync(session);
         }
 
         public async Task<User> GetUserAsync(Guid id)
         {
-            User? user = await _messengerContext.Users.FindAsync(id);
+            User? user = await _userRepository.FindByIdAsync(id);
             if (id != _serviceContext.UserId && user != null)
             {
-                User? currentUser = await _messengerContext.Users.FindAsync(_serviceContext.UserId);
+                User? currentUser = await _userRepository.FindByIdAsync(_serviceContext.UserId);
                 if (currentUser == null)
                 {
                     throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
@@ -163,9 +164,7 @@ namespace Messenger.Services
                 throw new InvalidOperationException(ex.Message);
             }
 
-            
-
-            User? user = await _messengerContext.Users.FindAsync(claimParser.TokenParts[0].Value);
+            User? user = await _userRepository.FindByIdAsync(Guid.Parse(claimParser.TokenParts[0].Value));
             if (user == null || user.Email != claimParser.TokenParts[1].Value)
             {
                 return false;
@@ -173,34 +172,63 @@ namespace Messenger.Services
             if (!user.IsConfirmed)
             {
                 user.IsConfirmed = true;
-                await _messengerContext.SaveChangesAsync();
+                await _userRepository.UpdateAsync(user);
             }
 
             return true;
         }
 
-        public async Task UpdateUserInfoAsync(string name, string surname, string nickname, string email)
+        public async Task UpdateUserInfoAsync(string name, string surname, string nickname, string? email)
         {
-            User user = await _messengerContext.Users.FindAsync(_serviceContext.UserId) ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
+            if (string.IsNullOrWhiteSpace(name) &&
+               string.IsNullOrWhiteSpace(surname) &&
+               string.IsNullOrWhiteSpace(nickname))
+            {
+                throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
+            }
+
+            if (name.Length > 50)
+            {
+                throw new ArgumentException(ResponseErrors.FIELD_LENGTH_IS_LONG);
+            }
+            if (surname.Length > 50)
+            {
+                throw new ArgumentException(ResponseErrors.FIELD_LENGTH_IS_LONG);
+            }
+            if (nickname.Length > 20)
+            {
+                throw new ArgumentException(ResponseErrors.FIELD_LENGTH_IS_LONG);
+            }
+
+            User user = await _userRepository.FindByIdAsync(_serviceContext.UserId) ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
+            
             user.Name = name;
             user.Surname = surname;
             user.Nickname = nickname;
-
-            if (email != user.Email)
+            if (email != null)
             {
-                user.Email = email;
-                user.IsConfirmed = false;
+                User? confirmedEmailUser = await _userRepository.GetConfirmedUserAsync(email);
+                Console.WriteLine(user == confirmedEmailUser);
+                if (confirmedEmailUser != null && confirmedEmailUser.Id != user.Id)
+                {
+                    throw new ArgumentException(ResponseErrors.EMAIL_ALREADY_EXIST);
+                }
+
+                if (email != user.Email)
+                {
+                    user.Email = email;
+                    user.IsConfirmed = false;
+                }
             }
 
-            await _messengerContext.SaveChangesAsync();
+            await _userRepository.UpdateAsync(user);
         }
 
         public async Task UpdateStatusAsync(string newStatus)
         {
-            User user = await _messengerContext.Users.FindAsync(_serviceContext.UserId) ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
+            User user = await _userRepository.FindByIdAsync(_serviceContext.UserId) ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
             user.Status = newStatus;
-
-            await _messengerContext.SaveChangesAsync();
+            await _userRepository.UpdateAsync(user);
         }
 
         public async Task ChangePasswordAsync(Guid? userid, string newPassword)
@@ -208,11 +236,11 @@ namespace Messenger.Services
             User user;
             if (userid.HasValue)
             {
-                user = await _messengerContext.Users.FindAsync(userid.Value) ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+                user = await _userRepository.FindByIdAsync(userid.Value) ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
             }
             else
             {
-                user  = await _messengerContext.Users.FindAsync(_serviceContext.UserId) ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
+                user  = await _userRepository.FindByIdAsync(_serviceContext.UserId) ?? throw new InvalidOperationException(ResponseErrors.USER_NOT_AUTHENTIFICATION);
             }
 
             string hasedPassword = Password.GetHashedPassword(newPassword);
@@ -220,13 +248,13 @@ namespace Messenger.Services
             {
                 throw new ArgumentException(ResponseErrors.PASSWORD_ALREADY_SET);
             }
-            user.Password = newPassword;
-            await _messengerContext.SaveChangesAsync();
+            user.Password = hasedPassword;
+            await _userRepository.UpdateAsync(user);
         }
 
         public async Task<User?> GetCurrentUserAsync()
         {
-            return await _messengerContext.Users.FindAsync(_serviceContext.UserId);
+            return await _userRepository.FindByIdAsync(_serviceContext.UserId);
         }
 
         public async Task SendToEmailAsync(string email, string subject, string content)
@@ -251,8 +279,7 @@ namespace Messenger.Services
 
         public async Task<ConfirmationCode> TryGetCodeInfoAsync(string code)
         {
-            IEnumerable<ConfirmationCode> confirmationCodes = 
-                _messengerContext.ConfirmationCodes.Where(code => code.IsUsed == false && code.DateStart >= DateTime.UtcNow.Add(-_validTime) && !code.IsDeleted);
+            IEnumerable<ConfirmationCode> confirmationCodes = await _confirmationCodeRepository.GetUnusedValidCode();
 
             if (!confirmationCodes.Any())
             {
@@ -265,7 +292,7 @@ namespace Messenger.Services
                 {
                     Password.VerifyHashedPassword(codeHash.Code, code);
                     codeHash.IsUsed = true;
-                    await _messengerContext.SaveChangesAsync();
+                    await _confirmationCodeRepository.UpdateAsync(codeHash);
 
                     return codeHash;
                 }
@@ -277,25 +304,24 @@ namespace Messenger.Services
 
         public async Task SendCodeAsync(string email)
         {
-            User user = await _messengerContext.Users.Where(u => u.IsConfirmed && u.Email == email && !u.IsDeleted).FirstOrDefaultAsync() 
-                ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
-            string hashedCode;
-            string generatedCode;
+            User user = await _userRepository.GetConfirmedUserAsync(email) ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
+            //string hashedCode;
+            //string generatedCode;
 
-            do
-            {
-                generatedCode = CodeGenerator.Generate();
-                hashedCode = Password.GetHashedPassword(generatedCode);
-            }
-            while (_messengerContext.ConfirmationCodes.Any(code => code.Code == hashedCode && !code.IsUsed && !code.IsDeleted));
-            CodeGenerator codeGenerator = new CodeGenerator(_messengerContext);
-            codeGenerator.SetPreviousCodeAsInvalid(user.Id);
-            ConfirmationCode code = await codeGenerator.GenerateForUser(user.Id);
+            //do
+            //{
+            //    generatedCode = CodeGenerator.Generate();
+            //    hashedCode = Password.GetHashedPassword(generatedCode);
+            //}
+            //while (_messengerContext.ConfirmationCodes.Any(code => code.Code == hashedCode && !code.IsUsed && !code.IsDeleted));
+            //CodeGenerator codeGenerator = new CodeGenerator();
+            //codeGenerator.SetPreviousCodeAsInvalid(user.Id);
+            //ConfirmationCode code = await codeGenerator.GenerateForUser(user.Id);
 
-            if (!string.IsNullOrEmpty(user.Email))
-            {
-                await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
-            }
+            //if (!string.IsNullOrEmpty(user.Email))
+            //{
+            //    await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
+            //}
         }
     }
 }

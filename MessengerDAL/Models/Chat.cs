@@ -10,7 +10,10 @@ namespace MessengerDAL.Models
 {
     public class Chat : EntityBase
     {
-        public string Name { get; set; }
+        [MaxLength(100)]
+        public string Name { get; set; } = null!;
+
+        [MaxLength(500)]
         public string? Description { get; set; }
         public DateTime DateCreated { get; set; }
 

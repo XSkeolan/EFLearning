@@ -5,23 +5,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Messenger.Repositories
 {
-    public class UserChatRepository : IUserChatRepository
+    public class UserChatRepository : BaseRepository<UserChat>, IUserChatRepository
     {
-        private readonly MessengerContext _messengerContext;
-
-        public UserChatRepository(MessengerContext messengerContext)
+        public UserChatRepository(MessengerContext context) : base(context)
         {
-            _messengerContext = messengerContext;
         }
 
         public async Task<UserChat?> GetByChatAndUserAsync(Guid chatId, Guid userId)
         {
-            return await _messengerContext.UserChats.Where(userchat => userchat.ChatId == chatId && userchat.UserId == userId && !userchat.IsDeleted).FirstOrDefaultAsync();
+            return (await GetByConditions(userchat => userchat.ChatId == chatId && userchat.UserId == userId && !userchat.IsDeleted)).FirstOrDefault();
         }
 
-        public Task<IEnumerable<Guid>> GetChatUsersAsync(Guid chatId)
+        public async Task<IEnumerable<UserChat>> GetChatUsersAsync(Guid chatId)
         {
-            return Task.Run(() => _messengerContext.UserChats.Where(userchat => userchat.ChatId == chatId).Select(uc => uc.UserId).AsEnumerable());
+            return await GetByConditions(uc => uc.ChatId == chatId && !uc.IsDeleted);
         }
+
+        public async Task<IEnumerable<UserChat>> GetUserChatsAsync(Guid userId)
+        {
+            return await GetByConditions(uc => uc.UserId == userId && !uc.IsDeleted);
+        }
+
+        public int GetCountUsersInChat(Guid chatId)
+        {
+            return _dbSet.Count(u => u.ChatId == chatId);
+        }     
     }
 }

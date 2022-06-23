@@ -140,8 +140,7 @@ namespace Messenger.Controllers
         {
             if (string.IsNullOrWhiteSpace(request.Name) &&
                 string.IsNullOrWhiteSpace(request.Surname) &&
-                string.IsNullOrWhiteSpace(request.NickName) &&
-                string.IsNullOrWhiteSpace(request.Email))
+                string.IsNullOrWhiteSpace(request.NickName))
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
@@ -158,21 +157,23 @@ namespace Messenger.Controllers
             {
                 return BadRequest(ResponseErrors.FIELD_LENGTH_IS_LONG);
             }
-
-            try
+            if (!string.IsNullOrWhiteSpace(request.Email))
             {
-                MailAddress m = new MailAddress(request.Email);
-            }
-            catch (FormatException)
-            {
-                return BadRequest(ResponseErrors.INVALID_FIELDS);
+                try
+                {
+                    MailAddress m = new MailAddress(request.Email);
+                }
+                catch (FormatException)
+                {
+                    return BadRequest(ResponseErrors.INVALID_FIELDS);
+                }
             }
 
             try
             {
                 await _userService.UpdateUserInfoAsync(request.Name, request.Surname, request.NickName, request.Email);
             }
-            catch(InvalidOperationException ex)
+            catch(Exception ex)
             {
                 return BadRequest(ex.Message);
             }

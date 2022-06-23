@@ -36,6 +36,12 @@ namespace Messenger
         public const string CHANNEL_LINK_ALREADY_USED = "This link already used";
         #endregion
 
+        #region Files
+        public const string FILE_IS_EMPTY = "Uploaded file is empty!";
+        public const string FILE_NOT_FOUND = "File not found";
+        public const string COUNT_FILES_VERY_LONG = "Count files in this request is very long! The maximum number of files in request is five";
+        #endregion
+
         #region Invalid Field
         public const string INVALID_PHONE = "Phonenumber has an incorrect format";
         public const string ALREADY_EXISTS = "Some fields already exists";

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Messenger.Options;
 using System.Text;
+using Messenger.Repositories;
 
 namespace Messenger
 {
@@ -55,8 +56,28 @@ namespace Messenger
             });
 
             services.AddDbContext<MessengerContext>(options => options.UseNpgsql(Configuration.GetConnectionString("MessengerDb")));
-            services.AddScoped<IServiceContext, ServiceContext>();
+            services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IUserTypeRepository, UserTypeRepository>();
+            services.AddTransient<IUserChatRepository, UserChatRepository>();
+
+            services.AddTransient<IChatRepository, ChatRepository>();
+            services.AddTransient<IChatService, ChatService>();
+            services.AddTransient<IChatLinkRepository, ChatLinkRepository>();
+
+            services.AddTransient<ILinkService, LinkService>();
+
+            services.AddTransient<IMessageRepository, MessageRepository>();
+            //services.AddTransient<IMessageService, MessageService>();
+            services.AddTransient<IMessageFileRepository, MessageFileRepository>();            
+            
+            services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
+
+            services.AddTransient<IFileRepository, FileRepository>();
+            //services.AddTransient<IFileService, FileService>();
+
+            services.AddTransient<ISessionRepository, SessionRepository>();
+            services.AddScoped<IServiceContext, ServiceContext>();
             services.AddTransient<ITokenService, TokenService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
