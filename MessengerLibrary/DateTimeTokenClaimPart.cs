@@ -2,22 +2,22 @@
 
 namespace MessengerLibrary
 {
-    public class GuidTokenClaimPart : TokenClaimPart
+    public class DateTimeTokenClaimPart : TokenClaimPart
     {
-        public override string Type => "Guid";
+        public override string Type => "DateTime";
 
-        public GuidTokenClaimPart() : base() { }
+        public DateTimeTokenClaimPart() : base() { }
 
         public override void Parse(Claim claim)
         {
             base.Parse(claim);
 
-            if (!Guid.TryParse(claim.Value, out Guid guid))
+            if (!DateTime.TryParse(claim.Value, out DateTime dateTime))
             {
                 throw new ArgumentException("Value is not parsed");
             }
 
-            _value = guid.ToString();
+            _value = dateTime.ToString();
         }
     }
 }

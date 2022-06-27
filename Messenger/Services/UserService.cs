@@ -150,7 +150,7 @@ namespace Messenger.Services
                 throw new ArgumentException(ResponseErrors.INVALID_FIELDS);
             }
 
-            EmailJwtToken emailJwt = new EmailJwtToken();
+            JwtTokenValidator emailJwt = new JwtTokenValidator();
             ClaimParser claimParser;
             try
             {
@@ -305,23 +305,30 @@ namespace Messenger.Services
         public async Task SendCodeAsync(string email)
         {
             User user = await _userRepository.GetConfirmedUserAsync(email) ?? throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
-            //string hashedCode;
-            //string generatedCode;
+            string hashedCode;
+            string generatedCode;
 
-            //do
-            //{
-            //    generatedCode = CodeGenerator.Generate();
-            //    hashedCode = Password.GetHashedPassword(generatedCode);
-            //}
-            //while (_messengerContext.ConfirmationCodes.Any(code => code.Code == hashedCode && !code.IsUsed && !code.IsDeleted));
-            //CodeGenerator codeGenerator = new CodeGenerator();
-            //codeGenerator.SetPreviousCodeAsInvalid(user.Id);
-            //ConfirmationCode code = await codeGenerator.GenerateForUser(user.Id);
+            do
+            {
+                generatedCode = CodeGenerator.Generate();
+                hashedCode = Password.GetHashedPassword(generatedCode);
+            }
+            while ((await _confirmationCodeRepository.GetByConditions(code => code.Code == hashedCode && !code.IsUsed && !code.IsDeleted)).Any());
 
-            //if (!string.IsNullOrEmpty(user.Email))
-            //{
-            //    await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
-            //}
+            ConfirmationCode code = new ConfirmationCode
+            { 
+                Code = hashedCode,
+                DateStart = DateTime.UtcNow,
+                IsUsed = false,
+                UserId = user.Id
+            };
+
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                await SendToEmailAsync(user.Email, "Код восстановления", generatedCode);
+            }
+
+            await _confirmationCodeRepository.CreateAsync(code);
         }
     }
 }

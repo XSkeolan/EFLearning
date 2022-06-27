@@ -5,6 +5,6 @@ namespace Messenger.Interfaces
     public interface IUserTypeRepository : IRepository<UserType>
     {
         Task<IEnumerable<UserType>> GetAllAsync();
-        Task<UserType?> GetByRoleName(string roleName);
+        Task<UserType?> GetByRoleNameAsync(string roleName);
     }
 }

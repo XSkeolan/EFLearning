@@ -74,7 +74,7 @@ namespace Messenger
             services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
 
             services.AddTransient<IFileRepository, FileRepository>();
-            //services.AddTransient<IFileService, FileService>();
+            services.AddTransient<IFileService, FileService>();
 
             services.AddTransient<ISessionRepository, SessionRepository>();
             services.AddScoped<IServiceContext, ServiceContext>();

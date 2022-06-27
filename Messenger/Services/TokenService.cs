@@ -1,6 +1,5 @@
 ﻿using Messenger.Options;
 using MessengerDAL.Models;
-using MessengerDAL;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text;
@@ -18,10 +17,12 @@ namespace Messenger.Services
         private readonly int _sessionExpires;
         private readonly int _emailLinkExpires;
 
-        private readonly MessengerContext _messengerContext;
         private readonly IServiceContext _serviceContext;
+        private readonly ISessionRepository _sessionRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IChatLinkRepository _chatLinkRepository;
 
-        public TokenService(IOptions<JwtOptions> options, MessengerContext messengerContext, IServiceContext serviceContext)
+        public TokenService(IOptions<JwtOptions> options, IServiceContext serviceContext, ISessionRepository sessionRepository, IUserRepository userRepository, IChatLinkRepository chatLinkRepository)
         {
             _issuer = options.Value.Issuer;
             _audience = options.Value.Audience;
@@ -29,13 +30,15 @@ namespace Messenger.Services
             _sessionExpires = options.Value.SessionExpires;
             _emailLinkExpires = options.Value.EmailLinkExpires;
 
-            _messengerContext = messengerContext;
             _serviceContext = serviceContext;
+            _sessionRepository = sessionRepository;
+            _userRepository = userRepository;
+            _chatLinkRepository = chatLinkRepository;
         }
 
-        public async Task<string> CreateSessionToken(Guid sessionId)
+        public async Task<string> CreateSessionTokenAsync(Guid sessionId)
         {
-            Session? session = await _messengerContext.Sessions.FindAsync(sessionId);
+            Session? session = await _sessionRepository.FindByIdAsync(sessionId);
             if (session == null)
             {
                 throw new ArgumentException(ResponseErrors.SESSION_NOT_FOUND);
@@ -44,15 +47,15 @@ namespace Messenger.Services
             List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
-                new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
+                //new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
             };
 
             return CreateJwtToken(claims, session.DateStart.AddSeconds(_sessionExpires));
         }
 
-        public async Task<string> CreateEmailToken()
+        public async Task<string> CreateEmailTokenAsync()
         {
-            User? user = await _messengerContext.Users.FindAsync(_serviceContext.UserId);
+            User? user = await _userRepository.FindByIdAsync(_serviceContext.UserId);
             if (user == null)
             {
                 throw new ArgumentException(ResponseErrors.USER_NOT_FOUND);
@@ -71,12 +74,12 @@ namespace Messenger.Services
             return CreateJwtToken(claims, DateTime.UtcNow.AddSeconds(_emailLinkExpires));
         }
 
-        public async Task<string> CreateInvitationToken(Guid channelLinkId)
+        public async Task<string> CreateInvitationTokenAsync(Guid channelLinkId)
         {
-            ChatLink? channelLink = await _messengerContext.ChatLinks.FindAsync(channelLinkId);
+            ChatLink? channelLink = await _chatLinkRepository.FindByIdAsync(channelLinkId);
             if (channelLink == null)
             {
-                throw new ArgumentNullException(ResponseErrors.CHANNEL_LINK_NOT_FOUND);
+                throw new ArgumentException(ResponseErrors.CHANNEL_LINK_NOT_FOUND);
             }
 
             List<Claim> claims = new List<Claim>
@@ -90,7 +93,7 @@ namespace Messenger.Services
 
         private string CreateJwtToken(IEnumerable<Claim> claims, DateTime expires)
         {
-            var jwt = new JwtSecurityToken(
+            JwtSecurityToken jwt = new JwtSecurityToken(
                     issuer: _issuer,
                     audience: _audience,
                     claims: claims,

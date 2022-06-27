@@ -12,10 +12,14 @@ namespace Messenger.Interfaces
         Task EditPhotoAsync(Guid chatId, Guid fileId);
         Task<UserType> GetAdminRoleAsync();
         Task<Chat> GetChatAsync(Guid chatId);
+        int GetCountUsers(Guid chatId);
         Task<IEnumerable<Chat>> GetDialogsAsync(Guid? offset_id, int count);
         Task<IEnumerable<UserType>> GetRolesAsync();
         Task<UserChat> InviteUserAsync(Guid chatId, Guid userId);
+        Task<UserChat> JoinAsync(Guid chatId);
+        Task<Chat> JoinByLinkAsync(string token);
         Task KickUserAsync(Guid chatId, Guid userId);
+        Task LeaveAsync(Guid chatId);
         Task<IEnumerable<User>> SearchUsersAsync(Guid chatId, string nickname);
         Task SetRoleAsync(Guid chatId, Guid userId, Guid roleId);
     }

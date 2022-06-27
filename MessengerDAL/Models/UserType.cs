@@ -14,7 +14,7 @@ namespace MessengerDAL.Models
         public string TypeName { get; set; }
 
         [StringLength(256)]
-        public string Permissions { get; set; } = "";
+        public string? Permissions { get; set; }
         public bool IsDefault { get; set; }
         public short PriorityLevel { get; set; }
 

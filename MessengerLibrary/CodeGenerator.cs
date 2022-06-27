@@ -6,12 +6,7 @@ namespace MessengerLibrary
 {
     public class CodeGenerator
     {
-        public CodeGenerator()
-        {
-
-        }
-
-        public string Generate()
+        public static string Generate()
         {
             Random rnd = new Random();
             string generatedCode = string.Empty;
@@ -22,16 +17,6 @@ namespace MessengerLibrary
             }
 
             return generatedCode;
-        }
-
-        public async void SetPreviousCodeAsInvalid(Guid userId)
-        {
-            //ConfirmationCode? code = await _messengerContext.ConfirmationCodes.OrderBy(c => c.DateStart).FirstOrDefaultAsync(c => c.UserId == userId);
-            //if(code != null)
-            //{
-            //    code.IsUsed = true;
-            //    _messengerContext.SaveChanges();
-            //}
         }
     }
 }

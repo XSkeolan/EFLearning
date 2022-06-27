@@ -91,7 +91,7 @@ namespace Messenger.Controllers
                 {
                     UserId = session.UserId,
                     Expiries = _userService.SessionExpires,
-                    Token = await _tokenService.CreateSessionToken(session.Id)
+                    Token = await _tokenService.CreateSessionTokenAsync(session.Id)
                 });
             }
             catch (Exception ex)
@@ -252,7 +252,7 @@ namespace Messenger.Controllers
             string link;
             try
             {
-                string emailToken = await _tokenService.CreateEmailToken();
+                string emailToken = await _tokenService.CreateEmailTokenAsync();
                 link = await _linkService.GetEmailLink(emailToken);
                 User? user = await _userService.GetCurrentUserAsync();
                 if(user == null)

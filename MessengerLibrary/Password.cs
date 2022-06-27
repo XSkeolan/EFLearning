@@ -7,10 +7,10 @@ namespace MessengerLibrary
         public static string GetHashedPassword(string password)
         {
             byte[] salt = new byte[16];
-            var rng = RandomNumberGenerator.Create();
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
             rng.GetBytes(salt);
 
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
+            Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
             byte[] hash = pbkdf2.GetBytes(20);
 
             byte[] hashBytes = new byte[36];
@@ -30,7 +30,7 @@ namespace MessengerLibrary
             byte[] salt = new byte[16];
             Array.Copy(hashBytes, 0, salt, 0, 16);
             /* Compute the hash on the password the user entered */
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
+            Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000);
             byte[] hash = pbkdf2.GetBytes(20);
             /* Compare the results */
             for (int i = 0; i < 20; i++)

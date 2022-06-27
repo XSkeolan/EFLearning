@@ -89,6 +89,11 @@ namespace Messenger.Services
                 throw new InvalidOperationException(ResponseErrors.USER_TYPE_NOT_FOUND);
             }
 
+            if(userType.Permissions == null)
+            {
+                return false;
+            }
+
             return userType.Permissions.Contains(permission);
         }
     }

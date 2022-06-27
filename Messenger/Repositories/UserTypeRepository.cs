@@ -10,7 +10,7 @@ namespace Messenger.Repositories
         {
         }
 
-        public async Task<UserType?> GetByRoleName(string roleName)
+        public async Task<UserType?> GetByRoleNameAsync(string roleName)
         {
             return (await GetByConditions(c => c.TypeName == roleName)).FirstOrDefault();
         }

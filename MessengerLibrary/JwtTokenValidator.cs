@@ -3,12 +3,12 @@ using System.Security.Claims;
 
 namespace MessengerLibrary
 {
-    public class EmailJwtToken : TokenClaimPart
+    public class JwtTokenValidator
     {
-        JwtSecurityTokenHandler _jwtHandler;
-        List<Claim> _claims;
+        private readonly JwtSecurityTokenHandler _jwtHandler;
+        private readonly List<Claim> _claims;
 
-        public EmailJwtToken()
+        public JwtTokenValidator()
         {
             _jwtHandler = new JwtSecurityTokenHandler();
             _claims = new List<Claim>();
@@ -18,13 +18,13 @@ namespace MessengerLibrary
         {
             JwtSecurityToken parseToken = _jwtHandler.ReadJwtToken(token);
 
-            foreach(Claim claim in parseToken.Claims)
+            foreach (Claim claim in parseToken.Claims)
             {
-                if(string.IsNullOrWhiteSpace(claim.Value))
+                if (string.IsNullOrWhiteSpace(claim.Value))
                 {
                     throw new ArgumentException("Token is invalid");
                 }
-                if(_claims.Select(c => c.Type).Contains(claim.Type))
+                if (_claims.Select(c => c.Type).Contains(claim.Type))
                 {
                     throw new InvalidOperationException("Claim type already exist");
                 }

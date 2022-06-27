@@ -2,7 +2,8 @@
 {
     public interface ITokenService
     {
-        Task<string> CreateSessionToken(Guid sessionId);
-        Task<string> CreateEmailToken();
+        Task<string> CreateSessionTokenAsync(Guid sessionId);
+        Task<string> CreateEmailTokenAsync();
+        Task<string> CreateInvitationTokenAsync(Guid channelLinkId);
     }
 }
