@@ -28,6 +28,14 @@ namespace Messenger
         public const string USER_LIST_CHATS_IS_EMPTY = "User has zero chat";
         #endregion
 
+        #region Messages
+        public const string MESSAGE_NOT_FOUND = "Message not found";
+        public const string EMPTY_MESSAGE = "Message is empty";
+        public const string MESSAGE_ALREADY_SENT = "Message already sent in destination";
+        public const string DESTINATION_NOT_FOUND = "Destination of message not found";
+        public const string USER_NOT_SENDER = "You is not sender of this message";
+        #endregion
+
         #region Channels
         public const string CHANNEL_NOT_FOUND = "Channel not found";
         public const string CHANNEL_LINK_NOT_FOUND = "Channel link not found";
