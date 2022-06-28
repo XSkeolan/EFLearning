@@ -28,7 +28,7 @@ namespace Messenger.Repositories
 
         public int GetCountUsersInChat(Guid chatId)
         {
-            return _dbSet.Count(u => u.ChatId == chatId);
+            return _dbSet.Count(u => u.ChatId == chatId && !u.IsDeleted);
         }     
     }
 }

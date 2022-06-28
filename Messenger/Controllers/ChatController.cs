@@ -189,15 +189,21 @@ namespace Messenger.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            IEnumerable<User> foundUsers = await _chatService.SearchUsersAsync(chatId, nickname);
-
-            return Ok(foundUsers.Take(limitResult).Select(user => new BaseUserResponse
+            try
             {
-                Id = user.Id,
-                Name = user.Name,
-                Surname = user.Surname,
-                Nickname = user.Nickname
-            }));
+                IEnumerable<User> foundUsers = await _chatService.SearchUsersAsync(chatId, nickname);
+                return Ok(foundUsers.Take(limitResult).Select(user => new BaseUserResponse
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    Surname = user.Surname,
+                    Nickname = user.Nickname
+                }));
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("editName")]
@@ -236,7 +242,14 @@ namespace Messenger.Controllers
         [Authorize]
         public async Task<IActionResult> EditPhoto(Guid chatId, Guid fileId)
         {
-            await _chatService.EditPhotoAsync(chatId, fileId);
+            try
+            {
+                await _chatService.EditPhotoAsync(chatId, fileId);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             return Ok();
         }
@@ -282,7 +295,11 @@ namespace Messenger.Controllers
             try
             {
                 await _kickService.LeaveAsync(chatId);
-
+                int countUser = _chatService.GetCountUsers(chatId);
+                if (countUser == 0)
+                {
+                    await _chatService.DeleteChatAsync(chatId);
+                }
                 return Ok();
             }
             catch (Exception ex)
@@ -378,7 +395,15 @@ namespace Messenger.Controllers
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            return Ok(await _fileService.UploadFile(imageData));
+            try
+            {
+
+                return Ok(await _fileService.UploadFile(imageData));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

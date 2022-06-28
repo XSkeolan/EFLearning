@@ -111,8 +111,9 @@ namespace Messenger
             });
 
             services.Configure<JwtOptions>(Configuration.GetSection("Jwt"));
-            services.Configure<EmailOptions>(Configuration.GetSection("Email"));
+            //services.Configure<EmailOptions>(Configuration.GetSection("Email"));
             services.Configure<CodeOptions>(Configuration.GetSection("Code"));
+            services.Configure<Options.FileOptions>(Configuration.GetSection("File"));
         }
         // Use this method to configure the HTTP request pipeline.  
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

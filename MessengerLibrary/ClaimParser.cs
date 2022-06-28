@@ -22,7 +22,7 @@ namespace MessengerLibrary
 
         public ClaimParser(List<Claim> claims, List<TokenClaimPart> tokenParts)
         {
-            if (claims.Count != tokenParts.Count)
+            if (claims.Count != tokenParts.Count+3)
             {
                 throw new ArgumentException("The list of claims and the list of token parts must be the same in length");
             }

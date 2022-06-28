@@ -47,7 +47,7 @@ namespace Messenger.Services
             List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimsIdentity.DefaultNameClaimType, session.Id.ToString(), "Guid"),
-                //new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
+                new Claim(ClaimsIdentity.DefaultRoleClaimType, "user")
             };
 
             return CreateJwtToken(claims, session.DateStart.AddSeconds(_sessionExpires));
@@ -81,7 +81,7 @@ namespace Messenger.Services
             {
                 throw new ArgumentException(ResponseErrors.CHANNEL_LINK_NOT_FOUND);
             }
-
+            //fix
             List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimsIdentity.DefaultNameClaimType, channelLinkId.ToString(), "Guid"),

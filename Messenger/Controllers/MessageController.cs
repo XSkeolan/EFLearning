@@ -300,6 +300,7 @@ namespace Messenger.Controllers
 
         [HttpGet]
         [Authorize]
+        [Route("findMessage")]
         public async Task<IActionResult> FindMessagesByText(Guid chatId, string text)
         {
             List<Message> messages = new List<Message>(await _messageHistoryService.FindMessagesAsync(chatId, text));
@@ -323,6 +324,7 @@ namespace Messenger.Controllers
 
         [HttpPost]
         [Authorize]
+        [Route("read")]
         public async Task<IActionResult> ReadMessage([FromBody] Guid messageId)
         {
             try
