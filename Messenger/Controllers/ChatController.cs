@@ -15,13 +15,25 @@ namespace Messenger.Controllers
         private readonly ILinkService _linkService;
 
         private readonly IFileService _fileService;
+        private readonly IInviteService _inviteService;
+        private readonly IKickService _kickService;
+        private readonly IRoleService _roleService;
 
-        public ChatController(IChatService chatService, ITokenService tokenService, ILinkService linkService, IFileService fileService)
+        public ChatController(IChatService chatService,
+            ITokenService tokenService,
+            ILinkService linkService,
+            IFileService fileService,
+            IInviteService inviteService,
+            IKickService kickService,
+            IRoleService roleService)
         {
             _chatService = chatService;
             _tokenService = tokenService;
             _linkService = linkService;
             _fileService = fileService;
+            _inviteService = inviteService;
+            _kickService = kickService;
+            _roleService = roleService;
         }
 
         [HttpPost]
@@ -46,9 +58,9 @@ namespace Messenger.Controllers
 
             try
             {
-                await _chatService.InviteUserAsync(chat.Id, chat.CreatorId);
-                UserType adminType = await _chatService.GetAdminRoleAsync();
-                await _chatService.SetRoleAsync(chat.Id, chat.CreatorId, adminType.Id);
+                await _inviteService.InviteUserAsync(chat.Id, chat.CreatorId);
+                UserType adminType = await _roleService.GetAdminRoleAsync();
+                await _roleService.SetRoleAsync(chat.Id, chat.CreatorId, adminType.Id);
             }
             catch(Exception ex)
             {
@@ -72,7 +84,7 @@ namespace Messenger.Controllers
         {
             try
             {
-                Chat chat = await _chatService.GetChatAsync(id);
+                Chat chat = await _chatService.TryGetChatAsync(id);
                 
                 ChatResponse chatResponse = new ChatResponse
                 {
@@ -85,7 +97,7 @@ namespace Messenger.Controllers
 
                 return Ok(chatResponse);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -112,7 +124,7 @@ namespace Messenger.Controllers
         {
             try
             {
-                await _chatService.InviteUserAsync(request.ChatId, request.UserId);
+                await _inviteService.InviteUserAsync(request.ChatId, request.UserId);
             }
             catch (Exception ex)
             {
@@ -128,7 +140,7 @@ namespace Messenger.Controllers
         {
             try
             {
-                await _chatService.KickUserAsync(request.ChatId, request.UserId);
+                await _kickService.KickUserAsync(request.ChatId, request.UserId);
             }
             catch (Exception ex)
             {
@@ -141,7 +153,7 @@ namespace Messenger.Controllers
         [HttpGet("getRoles")]
         public async Task<IActionResult> GetRoles()
         {
-            IEnumerable<RoleResponse> roleResponses = (await _chatService.GetRolesAsync()).Select(type => new RoleResponse
+            IEnumerable<RoleResponse> roleResponses = (await _roleService.GetRolesAsync()).Select(type => new RoleResponse
             {
                 Id = type.Id,
                 IsDefault = type.IsDefault,
@@ -159,7 +171,7 @@ namespace Messenger.Controllers
         {
             try
             {
-                await _chatService.SetRoleAsync(roleRequest.ChatId, roleRequest.UserId, roleRequest.RoleId);
+                await _roleService.SetRoleAsync(roleRequest.ChatId, roleRequest.UserId, roleRequest.RoleId);
                 return Ok();
             }
             catch (Exception ex)
@@ -252,7 +264,7 @@ namespace Messenger.Controllers
         {
             try
             {
-                await _chatService.JoinAsync(chatId);
+                await _inviteService.JoinAsync(chatId);
 
                 return Ok();
             }
@@ -269,7 +281,7 @@ namespace Messenger.Controllers
         {
             try
             {
-                await _chatService.LeaveAsync(chatId);
+                await _kickService.LeaveAsync(chatId);
 
                 return Ok();
             }
@@ -339,7 +351,7 @@ namespace Messenger.Controllers
 
             try
             {
-                Chat chat = await _chatService.JoinByLinkAsync(token);
+                Chat chat = await _inviteService.JoinByLinkAsync(token);
 
                 ChatResponse channelResponse = new ChatResponse
                 {

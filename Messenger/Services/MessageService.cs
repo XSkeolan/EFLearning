@@ -1,35 +1,26 @@
 ﻿using Messenger.Interfaces;
 using MessengerDAL.Models;
-using Microsoft.Extensions.Options;
 
 namespace Messenger.Services
 {
-    public class MessageService
+    public class MessageService : IMessageService
     {
-        private readonly string _filesPath;
         private readonly IMessageRepository _messageRepository;
         private readonly IChatRepository _chatRepository;
         private readonly IUserChatRepository _userChatRepository;
         private readonly IUserTypeRepository _userTypeRepository;
-        private readonly IFileRepository _fileRepository;
-        private readonly IMessageFileRepository _messageFileRepository;
         private readonly IServiceContext _serviceContext;
 
-        public MessageService(IOptions<Options.FileOptions> options, IMessageRepository messages,
+        public MessageService(IMessageRepository messages,
             IChatRepository chatRepository,
             IUserChatRepository userChatRepository,
             IUserTypeRepository userTypeRepository,
-            IFileRepository fileRepository,
-            IMessageFileRepository messageFileRepository,
             IServiceContext serviceContext)
         {
-            _filesPath = options.Value.StoredFilesPath;
             _messageRepository = messages;
             _chatRepository = chatRepository;
             _userChatRepository = userChatRepository;
             _userTypeRepository = userTypeRepository;
-            _fileRepository = fileRepository;
-            _messageFileRepository = messageFileRepository;
             _serviceContext = serviceContext;
         }
 
@@ -111,16 +102,6 @@ namespace Messenger.Services
             await _messageRepository.UpdateAsync(message);
         }
 
-        public async Task<IEnumerable<Message>> GetHistoryAsync(Guid chatId, DateTime dateStart, DateTime dateEnd)
-        {
-            Chat? chat = await _chatRepository.FindByIdAsync(chatId) ?? throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-
-            IEnumerable<Message> chatMessages = (await _messageRepository.GetMessagesByDestination(chatId))
-                .Where(msg => msg.DateSend >= dateStart && msg.DateSend <= dateEnd);
-
-            return chatMessages;
-        }
-
         public async Task EditMessageAsync(Guid messageId, string newText)
         {
             Message message = await GetMessageAsync(messageId);
@@ -138,17 +119,6 @@ namespace Messenger.Services
             Message message = await GetMessageAsync(messageId);
             message.IsRead = true;
             await _messageRepository.UpdateAsync(message);
-        }
-
-        public async Task<IEnumerable<Message>> FindMessagesAsync(Guid chatId, string subtext)
-        {
-            return (await _messageRepository.GetMessagesByDestination(chatId)).Where(x => x.Text.Contains(subtext));
-        }
-
-        public async Task<Message?> GetLastMessageAsync(Guid chatId)
-        {
-            _ = await _chatRepository.FindByIdAsync(chatId) ?? throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            return await _messageRepository.GetLastMessage(chatId);
         }
     }
 }

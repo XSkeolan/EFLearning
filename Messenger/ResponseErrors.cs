@@ -48,6 +48,8 @@ namespace Messenger
         public const string FILE_IS_EMPTY = "Uploaded file is empty!";
         public const string FILE_NOT_FOUND = "File not found";
         public const string COUNT_FILES_VERY_LONG = "Count files in this request is very long! The maximum number of files in request is five";
+        public const string FILE_MAX_SIZE = "One of the files exceeds the maximum allowed size";
+        public const string FILES_MAX_COUNT = "The number of attachments exceeded the maximum allowed";
         #endregion
 
         #region Invalid Field

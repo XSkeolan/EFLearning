@@ -2,6 +2,6 @@
 {
     public class FileOptions
     {
-        public string StoredFilesPath { get; set; }
+        public string StoredFilesPath { get; set; } = null!;
     }
 }

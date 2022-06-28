@@ -19,12 +19,12 @@ namespace Messenger.Repositories
 
         public async Task<TEntity?> FindByIdAsync(Guid id)
         {
-            return await _context.FindAsync<TEntity>(id);
+            return await _dbSet.FirstOrDefaultAsync(e => e.Id == id && e.IsDeleted == false);
         }
 
         public async Task DeleteByIdAsync(Guid id)
         {
-            TEntity? entity = await FindByIdAsync(id);
+            TEntity? entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id && e.IsDeleted == false);
             if (entity == null)
             {
                 throw new ArgumentException("Entity not found");

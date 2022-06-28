@@ -63,12 +63,16 @@ namespace Messenger
 
             services.AddTransient<IChatRepository, ChatRepository>();
             services.AddTransient<IChatService, ChatService>();
+            services.AddTransient<IInviteService, InviteService>();
+            services.AddTransient<IKickService, KickService>();
+            services.AddTransient<IRoleService, RoleService>();
             services.AddTransient<IChatLinkRepository, ChatLinkRepository>();
 
             services.AddTransient<ILinkService, LinkService>();
 
             services.AddTransient<IMessageRepository, MessageRepository>();
-            //services.AddTransient<IMessageService, MessageService>();
+            services.AddTransient<IMessageService, MessageService>();
+            services.AddTransient<IMessageHistoryService, MessageHistoryService>();
             services.AddTransient<IMessageFileRepository, MessageFileRepository>();            
             
             services.AddTransient<IConfirmationCodeRepository, ConfirmationCodeRepository>();
@@ -79,6 +83,8 @@ namespace Messenger
             services.AddTransient<ISessionRepository, SessionRepository>();
             services.AddScoped<IServiceContext, ServiceContext>();
             services.AddTransient<ITokenService, TokenService>();
+
+            services.AddTransient<IPermissionService, PermissionService>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
