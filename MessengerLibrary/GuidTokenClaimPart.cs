@@ -4,8 +4,6 @@ namespace MessengerLibrary
 {
     public class GuidTokenClaimPart : TokenClaimPart
     {
-        public override string Type => "Guid";
-
         public GuidTokenClaimPart() : base() { }
 
         public override void Parse(Claim claim)

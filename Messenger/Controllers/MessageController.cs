@@ -34,7 +34,7 @@ namespace Messenger.Controllers
             {
                 return BadRequest(ResponseErrors.EMPTY_MESSAGE);
             }
-            if (request.Files.Count > 0)
+            if (request.Files?.Count > 0)
             {
                 if (request.Files.Count > 5)
                 {
@@ -56,15 +56,18 @@ namespace Messenger.Controllers
                 {
                     DestinationChatId = request.Destination,
                     Text = request.Message,
+                    DateSend = DateTime.UtcNow
                 };
 
                 await _messageService.SendMessageAsync(message);
-
-                foreach (var file in request.Files)
+                if (request.Files != null)
                 {
-                    if (file.Length > 0)
+                    foreach (var file in request.Files)
                     {
-                        await _fileService.SendAttachment(message.Id, file);
+                        if (file.Length > 0)
+                        {
+                            await _fileService.SendAttachment(message.Id, file);
+                        }
                     }
                 }
 
@@ -79,14 +82,18 @@ namespace Messenger.Controllers
         [HttpGet]
         [Authorize]
         [Route("getHistory")]
-        public async Task<IActionResult> GetHistory(Guid chatId, DateTime dateStart, DateTime dateEnd)
+        public async Task<IActionResult> GetHistory(Guid chatId, DateTime dateStart, DateTime? dateEnd)
         {
+            if(!dateEnd.HasValue)
+            {
+                dateEnd = DateTime.UtcNow;
+            }
             if (dateStart >= dateEnd)
             {
                 return BadRequest(ResponseErrors.INVALID_FIELDS);
             }
 
-            IEnumerable<Message> messages = await _messageHistoryService.GetHistoryAsync(chatId, dateStart, dateEnd);
+            IEnumerable<Message> messages = await _messageHistoryService.GetHistoryAsync(chatId, dateStart, dateEnd.Value);
             List<MessageResponse> responses = new List<MessageResponse>();
             foreach (Message message in messages)
             {
@@ -123,10 +130,12 @@ namespace Messenger.Controllers
                 return BadRequest(ex.Message);
             }
 
-            IEnumerable<Message?> lastMessages = await Task.WhenAll(dialogs.Select(async (dialog) =>
+            List<Message?> lastMessages = new List<Message?>();
+            foreach (Chat chat in dialogs)
             {
-                return await _messageHistoryService.GetLastMessageAsync(dialog.Id);
-            }));
+                Message? message = await _messageHistoryService.GetLastMessageAsync(chat.Id);
+                lastMessages.Add(message);
+            }
 
             List<DialogInfoResponse> responses = new List<DialogInfoResponse>();
             using (var dialogEnumearator = dialogs.GetEnumerator())
@@ -329,7 +338,6 @@ namespace Messenger.Controllers
         {
             try
             {
-                await _messageService.GetMessageAsync(messageId);
                 await _messageService.ReadMessageAsync(messageId);
 
                 return Ok();

@@ -5,8 +5,6 @@ namespace MessengerLibrary
 {
     public class EmailTokenClaimPart : TokenClaimPart
     {
-        public override string Type => "Email";
-
         public override void Parse(Claim claim)
         {
             base.Parse(claim);

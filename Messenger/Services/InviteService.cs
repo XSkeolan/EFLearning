@@ -132,7 +132,7 @@ namespace Messenger.Services
             ChatLink? channelLink = await _chatLinkRepository.FindByIdAsync(Guid.Parse(claimParser.TokenParts[0].Value))
                 ?? throw new ArgumentException(ResponseErrors.CHANNEL_LINK_ALREADY_USED);
 
-            if (dateEnd < DateTime.UtcNow.ToLocalTime())
+            if (dateEnd < DateTime.UtcNow)
             {
                 throw new ArgumentException(ResponseErrors.CHANNEL_LINK_INVALID);
             }
@@ -143,8 +143,11 @@ namespace Messenger.Services
             }
 
             Chat? chat = await _chatRepository.FindByIdAsync(channelLink.ChatId) ?? throw new ArgumentException(ResponseErrors.CHAT_NOT_FOUND);
-            _ = await _userChatRepository.GetByChatAndUserAsync(chat.Id, _serviceContext.UserId)
-                ?? throw new InvalidOperationException(ResponseErrors.USER_ALREADY_IN_CHAT);
+            UserChat? userChat = await _userChatRepository.GetByChatAndUserAsync(chat.Id, _serviceContext.UserId);
+            if (userChat != null)
+            {
+                throw new InvalidOperationException(ResponseErrors.USER_ALREADY_IN_CHAT);
+            }
 
             UserChat? userGroup = new UserChat
             {

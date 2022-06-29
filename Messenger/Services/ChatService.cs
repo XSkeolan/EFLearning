@@ -161,7 +161,14 @@ namespace Messenger.Services
             {
                 throw new ArgumentException(ResponseErrors.USER_LIST_CHATS_IS_EMPTY);
             }
-            return await Task.WhenAll(chats.Select(async x => await _chatRepository.FindByIdAsync(x) ?? throw new InvalidOperationException(ResponseErrors.CHAT_NOT_FOUND)));
+
+            List<Chat> chatList = new List<Chat>();
+            foreach (Guid chat in chats)
+            {
+                Chat currentChat = await _chatRepository.FindByIdAsync(chat) ?? throw new InvalidOperationException(ResponseErrors.CHAT_NOT_FOUND);
+                chatList.Add(currentChat);
+            }
+            return chatList;
         }
 
         public async Task<IEnumerable<User>> SearchUsersAsync(Guid chatId, string nickname)

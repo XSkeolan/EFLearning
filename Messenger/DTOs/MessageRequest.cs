@@ -13,6 +13,6 @@
         /// <summary>
         /// Приложенные файлы к сообщению
         /// </summary>
-        public IFormFileCollection Files { get; set; } = null!;
+        public IFormFileCollection? Files { get; set; }
     }
 }

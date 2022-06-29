@@ -4,8 +4,6 @@ namespace MessengerLibrary
 {
     public class DateTimeTokenClaimPart : TokenClaimPart
     {
-        public override string Type => "DateTime";
-
         public DateTimeTokenClaimPart() : base() { }
 
         public override void Parse(Claim claim)

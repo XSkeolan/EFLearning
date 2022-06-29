@@ -24,7 +24,7 @@ namespace Messenger.Services
                 throw new ArgumentException(ResponseErrors.FILE_IS_EMPTY);
             }
 
-            var filePath = Path.Combine("D:\\Image", Path.GetRandomFileName());
+            var filePath = Path.Combine(_filesPath, Path.GetRandomFileName());
 
             using (var stream = System.IO.File.Create(filePath))
             {
